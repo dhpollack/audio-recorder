@@ -9,7 +9,7 @@
     "enabled": true
   },
 	"build": {
-		"command": "cargo leptos build --release && cargo install -q worker-build && LEPTOS_OUTPUT_NAME=audio-recorder worker-build --release --features ssr"
+		"command": "cargo leptos build --release --split && cargo install -q worker-build && LEPTOS_OUTPUT_NAME=audio-recorder worker-build --release --features ssr"
 	},
 	"assets": {
 		"directory": "./target/site"

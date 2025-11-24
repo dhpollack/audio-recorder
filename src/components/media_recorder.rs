@@ -28,8 +28,16 @@ impl Default for AudioConstraints {
 
 #[component]
 pub fn MediaRecorderComponent() -> impl IntoView {
+    use crate::webworker::audio_worker;
+
     let (is_recording, set_is_recording) = signal(false);
-    let (samples, set_samples) = signal(0_f32);
+    let (samples, set_samples) = signal(vec![]);
+
+    // Create a LocalResource that sends samples to the worker when they change
+    let average_sample = LocalResource::new(move || {
+        let data = samples.get();
+        audio_worker(data)
+    });
 
     // Store the MediaRecorder and Closure to keep them alive during recording
     // Use new_local because these JS objects are !Send and !Sync
@@ -87,7 +95,7 @@ pub fn MediaRecorderComponent() -> impl IntoView {
             });
 
             // Get the new samples average from the reader so we can turn webm audio into wav audio
-            let new_samples_average = if let Ok(array_buffer_val) =
+            let new_samples = if let Ok(array_buffer_val) =
                 wasm_bindgen_futures::JsFuture::from(reader_promise).await
                 && let array_buffer = array_buffer_val.unchecked_into::<js_sys::ArrayBuffer>()
                 && let Ok(decoded_promise) = audio_context.decode_audio_data(&array_buffer)
@@ -95,19 +103,18 @@ pub fn MediaRecorderComponent() -> impl IntoView {
                     wasm_bindgen_futures::JsFuture::from(decoded_promise).await
                 && let audio_buffer = audio_buffer.unchecked_into::<web_sys::AudioBuffer>()
                 && let Ok(float_data) = audio_buffer.get_channel_data(0)
-                && !float_data.is_empty()
             {
-                float_data.iter().sum::<f32>() / float_data.len() as f32
+                float_data
             } else {
-                0.0
+                vec![]
             };
-            set_samples.set(new_samples_average);
+            set_samples.set(new_samples);
         });
     };
 
     let start_recording = move || {
         let navigator = window().navigator();
-        set_samples.set(0_f32);
+        set_samples.set(vec![]);
         chunks_stored.update_value(|c| c.clear());
 
         leptos::task::spawn_local(async move {
@@ -197,14 +204,17 @@ pub fn MediaRecorderComponent() -> impl IntoView {
             </button>
 
             <Show when=move || true>
-                <div class="samples-display">
-                    <h3>"First 100 Audio Samples:"</h3>
-                    <pre>
+                <div class="worker-result">
+                    <h3>"Worker Calculation (Average):"</h3>
+                    <Suspense fallback=move || view! { "Loading..." }>
                         {move || {
-                            let samples_average = samples.get();
-                            format!("Sample Average: {samples_average}")
+                            match average_sample.get() {
+                                Some(Ok(res)) => format!("{res}"),
+                                Some(Err(e)) => format!("{e}"),
+                                None => "not sure what this is".to_string(),
+                            }
                         }}
-                    </pre>
+                    </Suspense>
                 </div>
             </Show>
         </div>

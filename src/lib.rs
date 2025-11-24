@@ -5,6 +5,7 @@ use crate::app::*;
 
 pub mod app;
 mod components;
+pub mod webworker;
 
 #[cfg(feature = "ssr")]
 pub fn register_server_functions() {
@@ -17,7 +18,7 @@ async fn router(env: Env) -> axum::Router {
 
     use axum::{Extension, Router};
     use leptos::prelude::*;
-    use leptos_axum::{generate_route_list, LeptosRoutes};
+    use leptos_axum::{LeptosRoutes, generate_route_list};
 
     let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;
