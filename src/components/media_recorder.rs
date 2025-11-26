@@ -5,8 +5,8 @@ use leptos::prelude::*;
 use serde::Serialize;
 use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
 use web_sys::{
-    AudioContext, Blob, BlobEvent, Event, FileReader, MediaRecorder, MediaStream,
-    MediaStreamConstraints,
+    AudioContext, AudioContextOptions, Blob, BlobEvent, Event, FileReader, MediaRecorder,
+    MediaStream, MediaStreamConstraints,
 };
 
 #[derive(Serialize, Clone)]
@@ -124,8 +124,13 @@ pub fn MediaRecorderComponent() -> impl IntoView {
         leptos::task::spawn_local(async move {
             // Retrieve or create the AudioContext lazily
             let audio_context = audio_context_stored.with_value(|cell| {
-                cell.get_or_init(|| AudioContext::new().expect("Failed to create AudioContext"))
-                    .clone()
+                cell.get_or_init(|| {
+                    let options = AudioContextOptions::new();
+                    options.set_sample_rate(16000.0);
+                    AudioContext::new_with_context_options(&options)
+                        .expect("Failed to create AudioContext with 16kHz sample rate")
+                })
+                .clone()
             });
 
             // Resume context if it's suspended (common browser policy requirement)
