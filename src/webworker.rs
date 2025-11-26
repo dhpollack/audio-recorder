@@ -1,4 +1,5 @@
 use leptos_workers::worker;
+use futures::stream::StreamExt;
 
 use crate::whisper::model::{Decoder, ModelData};
 
@@ -11,7 +12,7 @@ pub fn audio_worker(req: Vec<f32>) -> f32 {
 }
 
 #[worker(WhisperWorker)]
-pub fn whisper_worker(
+pub async fn whisper_worker(
     model_data: ModelData,
     rx: leptos_workers::Receiver<Vec<f32>>,
     tx: leptos_workers::Sender<String>,
@@ -19,7 +20,8 @@ pub fn whisper_worker(
     match Decoder::load(model_data) {
         Ok(mut decoder) => {
             leptos::logging::log!("WhisperWorker: Initialized.");
-            while let Ok(audio_samples) = rx.recv() {
+            let mut stream = rx.into_stream();
+            while let Some(audio_samples) = stream.next().await {
                 leptos::logging::log!(
                     "WhisperWorker: Received {} audio samples.",
                     audio_samples.len()
@@ -44,6 +46,7 @@ pub fn whisper_worker(
                     }
                 }
             }
+            leptos::logging::log!("WhisperWorker no longer checking for samples");
         }
         Err(e) => {
             leptos::logging::error!("Failed to load whisper model decoder: {:?}", e);

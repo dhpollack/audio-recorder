@@ -31,40 +31,56 @@ impl Default for AudioConstraints {
 pub fn MediaRecorderComponent() -> impl IntoView {
     use crate::webworker::audio_worker;
     use crate::{webworker::whisper_worker, whisper::util::fetch_model_data};
-    use leptos_workers::Sender;
 
     let (is_recording, set_is_recording) = signal(false);
     let (samples, set_samples) = signal(vec![]);
     let (transcribed_text, set_transcribed_text) = signal(String::new());
     let (is_model_enabled, set_is_model_enabled) = signal(false);
 
-    // Resource to fetch model data. Only runs when enabled.
-    let model_resource = LocalResource::new(move || async move {
-        if is_model_enabled.get() {
-            fetch_model_data().await.ok()
+    // Resource to fetch model data AND create the worker.
+    // Returns Option<(Sender, Receiver)>
+    let worker_resource = LocalResource::new(move || async move {
+        if is_model_enabled.get()
+            && let Ok(md) = fetch_model_data().await
+            && let Ok((tx, rx)) = whisper_worker(md)
+        {
+            leptos::logging::log!("worker resource ready");
+            Some((tx, rx))
         } else {
             None
         }
     });
 
-    // Store the sender for the whisper worker
-    let worker_sender = StoredValue::new_local(None::<Sender<Vec<f32>>>);
-
+    // effect to spawn worker and process received text
     Effect::new(move || {
-        // Check if model is loaded
-        if let Some(Some(model_data)) = model_resource.get() {
-            // Check if we already have a worker to avoid duplicates
-            if worker_sender.with_value(|w| w.is_none()) {
-                if let Ok((tx, rx)) = whisper_worker(model_data) {
-                    worker_sender.set_value(Some(tx));
-                    // Spawn receiver loop
-                    leptos::task::spawn_local(async move {
-                        let mut message_stream = rx.into_stream();
-                        while let Some(text) = message_stream.next().await {
-                            set_transcribed_text.set(text);
-                        }
-                    });
+        // Check if worker is ready
+        if let Some(Some((_tx, rx))) = worker_resource.get() {
+            leptos::logging::log!("worker spawned and ready to process");
+            leptos::task::spawn_local(async move {
+                let mut message_stream = rx.into_stream();
+                while let Some(text) = message_stream.next().await {
+                    leptos::logging::log!("Received transcription: {text}");
+                    set_transcribed_text.set(text);
                 }
+                leptos::logging::log!("message stream loop ended");
+            });
+        } else {
+            leptos::logging::warn!("worker not ready to process");
+        }
+    });
+
+    // effect to send audio to worker
+    Effect::new(move || {
+        let s = samples.get();
+        leptos::logging::log!("received samples: {}", s.len());
+        if !s.is_empty() {
+            // Use the resource directly to get the sender
+            if let Some(Some((tx, _rx))) = worker_resource.get() {
+                if let Err(e) = tx.send(s) {
+                    leptos::logging::warn!("send error: {e:?}");
+                }
+            } else {
+                leptos::logging::warn!("unable to get worker resource");
             }
         }
     });
@@ -73,6 +89,11 @@ pub fn MediaRecorderComponent() -> impl IntoView {
     let average_sample = LocalResource::new(move || {
         let data = samples.get();
         audio_worker(data)
+    });
+
+    let transcribed_text_resource = LocalResource::new(move || {
+        let text = transcribed_text.get();
+        async move { text }
     });
 
     // Store the MediaRecorder and Closure to keep them alive during recording
@@ -148,19 +169,6 @@ pub fn MediaRecorderComponent() -> impl IntoView {
         });
     };
 
-    Effect::new(move || {
-        let s = samples.get();
-        if !s.is_empty() {
-            worker_sender.with_value(move |sender| {
-                if let Some(sender) = sender
-                    && let Err(e) = sender.send(s)
-                {
-                    leptos::logging::warn!("send error: {e:?}");
-                }
-            });
-        }
-    });
-
     let start_recording = move || {
         let navigator = window().navigator();
         set_samples.set(vec![]);
@@ -180,8 +188,10 @@ pub fn MediaRecorderComponent() -> impl IntoView {
                 && let stream = MediaStream::from(js_stream)
                 && let Ok(recorder) = MediaRecorder::new_with_media_stream(&stream)
             {
+                leptos::logging::log!("creating handlers for recording");
                 let on_data_handler = Closure::new(move |event: BlobEvent| {
                     if let Some(blob) = event.data() {
+                        leptos::logging::log!("updating chunks stored");
                         chunks_stored.update_value(|c| c.push(blob));
                     }
                 });
@@ -243,7 +253,7 @@ pub fn MediaRecorderComponent() -> impl IntoView {
                     disabled=move || is_model_enabled.get()
                 >
                     {move || if is_model_enabled.get() {
-                        if model_resource.get().flatten().is_some() {
+                        if worker_resource.get().flatten().is_some() {
                             "Model Loaded"
                         } else {
                             "Loading Model..."
@@ -285,12 +295,9 @@ pub fn MediaRecorderComponent() -> impl IntoView {
             </Show>
             <div class="transcription-result">
                 <h3>Transcription Result</h3>
-                <Show when=move || !transcribed_text.get().is_empty()>
-                    <div class="transcription-result">
-                        <h3>"Transcription:"</h3>
-                        <p>{move || transcribed_text.get()}</p>
-                    </div>
-                </Show>
+                <Suspense fallback=move || view! { "Loading..." }>
+                    {move || transcribed_text_resource.get()}
+                </Suspense>
             </div>
         </div>
     }

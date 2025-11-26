@@ -9,10 +9,6 @@ use tokenizers::Tokenizer;
 
 pub const DTYPE: DType = DType::F32;
 pub const DEVICE: Device = Device::Cpu;
-pub const MODEL_URL: &str = "./assets/whisper/whisper-tiny/model.safetensors";
-pub const TOKENIZER_URL: &str = "./assets/whisper/whisper-tiny/tokenizer.json";
-pub const MEL_URL: &str = "./assets/whisper/mel_filters.safetensors";
-pub const CONFIG_URL: &str = "./assets/whisper/whisper-tiny/config.json";
 
 pub enum Model {
     Normal(m::model::Whisper),
@@ -164,6 +160,7 @@ impl Decoder {
         if let Some(language_token) = language_token {
             tokens.push(language_token);
         }
+        leptos::logging::log!("sample_len: {sample_len}\ntokens: {}\n", tokens.len());
         match self.task {
             None | Some(Task::Transcribe) => tokens.push(self.transcribe_token),
             Some(Task::Translate) => tokens.push(self.translate_token),
