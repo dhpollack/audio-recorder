@@ -1,5 +1,5 @@
 help:
-  just -l -u
+  just -l -u --list-submodules
 
 build-leptos:
   cargo leptos build --release
@@ -21,3 +21,8 @@ _claude *args:
 
 claude *args:
     just -E .env-claude _claude {{ args }}
+
+check:
+  cargo check --features ssr --target wasm32-unknown-unknown
+
+mod r2

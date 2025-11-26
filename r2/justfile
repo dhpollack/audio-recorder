@@ -1,0 +1,5 @@
+default:
+  just -u -l
+
+upload local_dir="whisper" bucket="alphabet-game-stg" *args="--local":
+  fd -I -t f . {{ local_dir }} -x npx wrangler r2 object put {{ args }} --file {} {{ bucket }}/{}

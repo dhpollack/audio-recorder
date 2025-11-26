@@ -24,7 +24,7 @@ leptos_meta = { version = "0.8" }
 leptos_router = { version = "0.8" }
 tower-service = "0.3"
 wasm-bindgen = "0.2"
-worker = { version = "0.6", features = ["http", "axum", "d1"], optional = true }
+worker = { version = "0.7", features = ["http", "axum", "d1"], optional = true }
 web-sys = { version = "0.3.82", features = [
   "MediaStream",
   "MediaDevices",
@@ -51,8 +51,23 @@ js-sys = "0.3"
 serde_json = "1.0.145"
 serde = { version = "1.0.228", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
-#gloo-worker = { version = "0.5.0", features = ["futures"] }
 leptos_workers = "0.3"
+candle-core = "0.9.1"
+candle-nn = "0.9.1"
+candle-transformers = "0.9.1"
+tokenizers = { version = "0.22.1", default-features = false, features = [
+  "unstable_wasm",
+] }
+num-traits = "0.2.19"
+safetensors = "0.7.0"
+anyhow = "1.0.100"
+rand = { version = "0.9", default-features = false, features = [
+  "std",
+  "thread_rng",
+] }
+reqwest = { version = "0.12.24" }
+futures = "0.3.31"
+send_wrapper = "0.6.0"
 
 [features]
 hydrate = ["leptos/hydrate"]
@@ -125,3 +140,19 @@ lib-features = ["hydrate"]
 #
 # Optional. Defaults to false.
 lib-default-features = false
+
+wasm-opt-features = [
+  "-Oz",
+  "--enable-bulk-memory",
+  "--enable-nontrapping-float-to-int",
+  "--enable-simd",
+]
+
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = ['--enable-simd']
+
+[package.metadata.wasm-pack.profile.profiling]
+wasm-opt = ['--enable-simd']
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['--enable-simd']

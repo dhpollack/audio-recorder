@@ -13,5 +13,9 @@
 	},
 	"assets": {
 		"directory": "./target/site"
-	}
+	},
+  "r2_buckets": [{
+    "binding": "alphabet-game-bucket",
+    "bucket_name": "alphabet-game-stg"
+  }]
 }

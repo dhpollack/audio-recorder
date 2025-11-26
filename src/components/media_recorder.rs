@@ -1,5 +1,6 @@
 use std::cell::OnceCell;
 
+use futures::stream::StreamExt;
 use leptos::prelude::*;
 use serde::Serialize;
 use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
@@ -29,9 +30,44 @@ impl Default for AudioConstraints {
 #[component]
 pub fn MediaRecorderComponent() -> impl IntoView {
     use crate::webworker::audio_worker;
+    use crate::{webworker::whisper_worker, whisper::util::fetch_model_data};
+    use leptos_workers::Sender;
 
     let (is_recording, set_is_recording) = signal(false);
     let (samples, set_samples) = signal(vec![]);
+    let (transcribed_text, set_transcribed_text) = signal(String::new());
+    let (is_model_enabled, set_is_model_enabled) = signal(false);
+
+    // Resource to fetch model data. Only runs when enabled.
+    let model_resource = LocalResource::new(move || async move {
+        if is_model_enabled.get() {
+            fetch_model_data().await.ok()
+        } else {
+            None
+        }
+    });
+
+    // Store the sender for the whisper worker
+    let worker_sender = StoredValue::new_local(None::<Sender<Vec<f32>>>);
+
+    Effect::new(move || {
+        // Check if model is loaded
+        if let Some(Some(model_data)) = model_resource.get() {
+            // Check if we already have a worker to avoid duplicates
+            if worker_sender.with_value(|w| w.is_none()) {
+                if let Ok((tx, rx)) = whisper_worker(model_data) {
+                    worker_sender.set_value(Some(tx));
+                    // Spawn receiver loop
+                    leptos::task::spawn_local(async move {
+                        let mut message_stream = rx.into_stream();
+                        while let Some(text) = message_stream.next().await {
+                            set_transcribed_text.set(text);
+                        }
+                    });
+                }
+            }
+        }
+    });
 
     // Create a LocalResource that sends samples to the worker when they change
     let average_sample = LocalResource::new(move || {
@@ -112,6 +148,19 @@ pub fn MediaRecorderComponent() -> impl IntoView {
         });
     };
 
+    Effect::new(move || {
+        let s = samples.get();
+        if !s.is_empty() {
+            worker_sender.with_value(move |sender| {
+                if let Some(sender) = sender
+                    && let Err(e) = sender.send(s)
+                {
+                    leptos::logging::warn!("send error: {e:?}");
+                }
+            });
+        }
+    });
+
     let start_recording = move || {
         let navigator = window().navigator();
         set_samples.set(vec![]);
@@ -188,6 +237,23 @@ pub fn MediaRecorderComponent() -> impl IntoView {
         <div class="media-recorder">
             <h2>"Audio Recorder"</h2>
 
+            <div class="model-controls" style="margin-bottom: 1rem;">
+                <button
+                    on:click=move |_| set_is_model_enabled.set(true)
+                    disabled=move || is_model_enabled.get()
+                >
+                    {move || if is_model_enabled.get() {
+                        if model_resource.get().flatten().is_some() {
+                            "Model Loaded"
+                        } else {
+                            "Loading Model..."
+                        }
+                    } else {
+                        "Load Whisper Model"
+                    }}
+                </button>
+            </div>
+
             <button
                 on:mousedown=move |_| start_recording()
                 on:mouseup=move |_| stop_recording()
@@ -217,6 +283,15 @@ pub fn MediaRecorderComponent() -> impl IntoView {
                     </Suspense>
                 </div>
             </Show>
+            <div class="transcription-result">
+                <h3>Transcription Result</h3>
+                <Show when=move || !transcribed_text.get().is_empty()>
+                    <div class="transcription-result">
+                        <h3>"Transcription:"</h3>
+                        <p>{move || transcribed_text.get()}</p>
+                    </div>
+                </Show>
+            </div>
         </div>
     }
 }

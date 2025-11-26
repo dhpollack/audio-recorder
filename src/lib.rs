@@ -6,10 +6,13 @@ use crate::app::*;
 pub mod app;
 mod components;
 pub mod webworker;
+pub mod whisper;
 
 #[cfg(feature = "ssr")]
 pub fn register_server_functions() {
-    // No server functions needed for media recorder
+    use leptos::server_fn::axum::register_explicit;
+
+    register_explicit::<whisper::util::FetchModelData>();
 }
 
 #[cfg(feature = "ssr")]
