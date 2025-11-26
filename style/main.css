@@ -1,1 +1,8 @@
 /* Add your CSS code here */
+.record-button {
+    user-select: none;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    touch-action: manipulation; /* Improves touch handling */
+}

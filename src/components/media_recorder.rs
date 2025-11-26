@@ -30,7 +30,7 @@ impl Default for AudioConstraints {
 #[component]
 pub fn MediaRecorderComponent() -> impl IntoView {
     use crate::webworker::audio_worker;
-    use crate::{webworker::whisper_worker, whisper::util::fetch_model_data};
+    use crate::webworker::whisper_worker;
 
     let (is_recording, set_is_recording) = signal(false);
     let (samples, set_samples) = signal(vec![]);
@@ -41,9 +41,9 @@ pub fn MediaRecorderComponent() -> impl IntoView {
     // Resource to fetch model data AND create the worker.
     // Returns Option<(Sender, Receiver)>
     let worker_resource = LocalResource::new(move || async move {
+        let origin = window().location().origin().unwrap_or_default();
         if is_model_enabled.get()
-            && let Ok(md) = fetch_model_data().await
-            && let Ok((tx, rx)) = whisper_worker(md)
+            && let Ok((tx, rx)) = whisper_worker(origin)
         {
             leptos::logging::log!("worker resource ready");
             Some((tx, rx))

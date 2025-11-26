@@ -3,3 +3,9 @@ default:
 
 upload local_dir="whisper" bucket="alphabet-game-stg" *args="--local":
   fd -I -t f . {{ local_dir }} -x npx wrangler r2 object put {{ args }} --file {} {{ bucket }}/{}
+
+download-weights:
+  wget -c https://huggingface.co/spaces/lmz/candle-whisper/resolve/main/mel_filters.safetensors -P whisper
+  wget -c https://huggingface.co/openai/whisper-tiny/resolve/main/model.safetensors -P whisper/whisper-tiny
+  wget -c https://huggingface.co/openai/whisper-tiny/raw/main/tokenizer.json -P whisper/whisper-tiny
+  wget -c https://huggingface.co/openai/whisper-tiny/raw/main/config.json -P whisper/whisper-tiny

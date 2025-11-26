@@ -16,7 +16,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 axum = { version = "0.8", default-features = false, optional = true }
 getrandom = { version = "0.3", features = ["wasm_js"] }
-leptos = { version = "0.8" }
+leptos = { version = "0.8", features = ["cbor"] }
 leptos_axum = { version = "0.8", default-features = false, features = [
   "wasm",
 ], optional = true }
@@ -46,6 +46,8 @@ web-sys = { version = "0.3.82", features = [
   "Url",
   "BaseAudioContext",
   "Event",
+  "Request",
+  "RequestInit",
 ] }
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
@@ -69,6 +71,7 @@ rand = { version = "0.9", default-features = false, features = [
 reqwest = { version = "0.12.24" }
 futures = "0.3.31"
 send_wrapper = "0.6.0"
+serde_cbor = "0.11.2"
 
 [features]
 hydrate = ["leptos/hydrate"]

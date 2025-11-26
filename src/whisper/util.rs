@@ -1,5 +1,7 @@
 use super::model::ModelData;
 use leptos::prelude::*;
+use leptos::server_fn::codec::Cbor;
+
 #[cfg(feature = "ssr")]
 use send_wrapper::SendWrapper;
 #[cfg(feature = "ssr")]
@@ -38,7 +40,7 @@ fn get_key_from_bucket(
     })
 }
 
-#[server]
+#[server(endpoint = "fetch_model_data", output = Cbor)]
 pub async fn fetch_model_data() -> Result<ModelData, ServerFnError> {
     use axum::Extension;
     use std::sync::Arc;
