@@ -1,8 +1,112 @@
 /* Add your CSS code here */
-.record-button {
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 1rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%; /* Prevent text scaling on iOS */
+}
+
+.media-recorder {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.record-button, .model-button {
     user-select: none;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE10+/Edge */
     touch-action: manipulation; /* Improves touch handling */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+    -webkit-touch-callout: none; /* Disable callout menu on iOS */
+    min-height: 44px; /* Minimum touch target size */
+    min-width: 44px;
+    padding: 12px 24px;
+    font-size: 16px; /* Prevent zoom on iOS */
+    border: 2px solid #007bff;
+    background-color: #007bff;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: block;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.record-button:hover, .model-button:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.record-button:active, .model-button:active,
+.record-button:focus, .model-button:focus {
+    background-color: #004085;
+    border-color: #004085;
+    outline: none;
+}
+
+.record-button:disabled, .model-button:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.record-button.recording {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.record-button.recording:hover {
+    background-color: #c82333;
+    border-color: #c82333;
+}
+
+.model-controls {
+    margin-bottom: 1rem;
+}
+
+.worker-result, .audio-player, .transcription-result {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.worker-result h3, .audio-player h3, .transcription-result h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+audio {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    .media-recorder {
+        padding: 0.5rem;
+    }
+
+    .record-button, .model-button {
+        font-size: 18px; /* Larger text for mobile */
+        padding: 16px 24px;
+    }
+
+    h1, h2, h3 {
+        text-align: center;
+    }
 }

@@ -267,7 +267,12 @@ pub fn MediaRecorderComponent() -> impl IntoView {
             <div class="model-controls" style="margin-bottom: 1rem;">
                 <button
                     on:click=move |_| set_is_model_enabled.set(true)
+                    on:touchstart=move |ev| {
+                        ev.prevent_default();
+                        set_is_model_enabled.set(true);
+                    }
                     disabled=move || is_model_enabled.get()
+                    class="model-button"
                 >
                     {move || if is_model_enabled.get() {
                         if worker_resource.get().flatten().is_some() {
@@ -284,8 +289,18 @@ pub fn MediaRecorderComponent() -> impl IntoView {
             <button
                 on:mousedown=move |_| start_recording()
                 on:mouseup=move |_| stop_recording()
-                on:touchstart=move |_| start_recording()
-                on:touchend=move |_| stop_recording()
+                on:touchstart=move |ev| {
+                    ev.prevent_default();
+                    start_recording();
+                }
+                on:touchend=move |ev| {
+                    ev.prevent_default();
+                    stop_recording();
+                }
+                on:touchcancel=move |ev| {
+                    ev.prevent_default();
+                    stop_recording();
+                }
                 class="record-button"
                 class:recording=is_recording
             >
