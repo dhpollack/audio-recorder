@@ -1,7 +1,12 @@
 default:
   just -u -l
 
-upload local_dir="whisper" bucket="alphabet-game-stg" *args="--local":
+bucket := "audio-recorder-stg"
+
+create-bucket bucket=bucket:
+  npx wrangler r2 bucket create {{ bucket }}
+
+upload local_dir="whisper" bucket=bucket *args="--local":
   fd -I -t f . {{ local_dir }} -x npx wrangler r2 object put {{ args }} --file {} {{ bucket }}/{}
 
 download-weights:

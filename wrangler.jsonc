@@ -2,20 +2,22 @@
 	"name": "audio-recorder",
 	"main": "build/index.js",
 	"compatibility_date": "2025-11-19",
-  "compatibility_flags": [
-    "global_fetch_strictly_public"
-  ],
-  "observability": {
-    "enabled": true
-  },
+	"compatibility_flags": [
+		"global_fetch_strictly_public"
+	],
+	"observability": {
+		"enabled": true
+	},
 	"build": {
 		"command": "cargo leptos build --release --split && cargo install -q worker-build && LEPTOS_OUTPUT_NAME=audio-recorder worker-build --release --features ssr"
 	},
 	"assets": {
 		"directory": "./target/site"
 	},
-  "r2_buckets": [{
-    "binding": "alphabet-game-bucket",
-    "bucket_name": "alphabet-game-stg"
-  }]
+	"r2_buckets": [
+		{
+			"binding": "audio-recorder-bucket",
+			"bucket_name": "audio-recorder-stg"
+		}
+	]
 }

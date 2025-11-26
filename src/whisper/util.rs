@@ -48,7 +48,7 @@ pub async fn fetch_model_data() -> Result<ModelData, ServerFnError> {
 
     let Extension::<Arc<Env>>(env) = leptos_axum::extract().await?;
     let r2_bucket = env
-        .bucket("alphabet-game-bucket")
+        .bucket("audio-recorder-bucket")
         .map_err(|e| ServerFnError::new(e.to_string()))?;
 
     let r2 = SendWrapper::new(r2_bucket);
