@@ -36,6 +36,7 @@ pub fn MediaRecorderComponent() -> impl IntoView {
     let (samples, set_samples) = signal(vec![]);
     let (transcribed_text, set_transcribed_text) = signal(String::new());
     let (is_model_enabled, set_is_model_enabled) = signal(false);
+    let (last_audio_url, set_last_audio_url) = signal(String::new());
 
     // Resource to fetch model data AND create the worker.
     // Returns Option<(Sender, Receiver)>
@@ -109,6 +110,17 @@ pub fn MediaRecorderComponent() -> impl IntoView {
     let audio_context_stored = StoredValue::new_local(OnceCell::<AudioContext>::new());
 
     let process_audio = move |blob: Blob| {
+        // Create object URL for playback
+        if let Ok(url) = web_sys::Url::create_object_url_with_blob(&blob) {
+            let old_url = last_audio_url.get_untracked();
+            if !old_url.is_empty() {
+                let _ = web_sys::Url::revoke_object_url(&old_url);
+            }
+            set_last_audio_url.set(url);
+        } else {
+            leptos::logging::warn!("Failed to create object URL for audio blob.");
+        }
+
         leptos::task::spawn_local(async move {
             // Retrieve or create the AudioContext lazily
             let audio_context = audio_context_stored.with_value(|cell| {
@@ -293,6 +305,14 @@ pub fn MediaRecorderComponent() -> impl IntoView {
                     </Suspense>
                 </div>
             </Show>
+
+            <Show when=move || !last_audio_url.get().is_empty()>
+                <div class="audio-player">
+                    <h3>"Last Recording:"</h3>
+                    <audio controls src=move || last_audio_url.get() />
+                </div>
+            </Show>
+
             <div class="transcription-result">
                 <h3>Transcription Result</h3>
                 <Suspense fallback=move || view! { "Loading..." }>

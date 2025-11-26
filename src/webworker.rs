@@ -1,5 +1,5 @@
-use leptos_workers::worker;
 use futures::stream::StreamExt;
+use leptos_workers::worker;
 
 use crate::whisper::model::{Decoder, ModelData};
 
