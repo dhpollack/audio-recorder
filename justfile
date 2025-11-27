@@ -1,20 +1,25 @@
 help:
   just -l -u --list-submodules
 
+# build with leptos for cloudflare
 build-leptos:
   cargo leptos build --release
 
-# Build the web worker
-build-worker:
-  mkdir -p target/site/pkg
-  cargo build --bin audio_worker --target wasm32-unknown-unknown
-  wasm-bindgen --target no-modules --out-dir target/site/pkg --out-name audio_worker --no-typescript target/wasm32-unknown-unknown/debug/audio_worker.wasm
-
+# serve in a dev environment with cloudflare
 dev:
   npx wrangler dev --ip 0.0.0.0 --port 8786
 
+# deploy to cloudflare
 deploy:
   npx wrangler deploy
+
+# serve in a dev environment without cloudflare
+dev-nocloudflare:
+  cargo leptos watch --release --split
+
+# check compilation
+check features="ssr,cloudflare":
+  cargo check --features {{ features }} --target wasm32-unknown-unknown
 
 _claude *args:
     claude {{ args }}
@@ -22,7 +27,4 @@ _claude *args:
 claude *args:
     just -E .env-claude _claude {{ args }}
 
-check:
-  cargo check --features ssr --target wasm32-unknown-unknown
-
-mod r2
+mod r2 "assets"

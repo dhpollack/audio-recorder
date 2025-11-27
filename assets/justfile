@@ -3,14 +3,17 @@ default:
 
 bucket := "audio-recorder-stg"
 
-create-bucket bucket=bucket:
-  npx wrangler r2 bucket create {{ bucket }}
-
-upload local_dir="whisper" bucket=bucket *args="--local":
-  fd -I -t f . {{ local_dir }} -x npx wrangler r2 object put {{ args }} --file {} {{ bucket }}/{}
-
+# download the model weights
 download-weights:
   wget -c https://huggingface.co/spaces/lmz/candle-whisper/resolve/main/mel_filters.safetensors -P whisper
   wget -c https://huggingface.co/openai/whisper-tiny/resolve/main/model.safetensors -P whisper/whisper-tiny
   wget -c https://huggingface.co/openai/whisper-tiny/raw/main/tokenizer.json -P whisper/whisper-tiny
   wget -c https://huggingface.co/openai/whisper-tiny/raw/main/config.json -P whisper/whisper-tiny
+
+# create the cloudflare bucket
+create-bucket bucket=bucket:
+  npx wrangler r2 bucket create {{ bucket }}
+
+# upload the files to the cloudflare bucket (defaults to local bucket)
+upload local_dir="whisper" bucket=bucket *args="--local":
+  fd -I -t f . {{ local_dir }} -x npx wrangler r2 object put {{ args }} --file {} {{ bucket }}/{}

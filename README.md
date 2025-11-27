@@ -1,6 +1,6 @@
 # Audio Recorder with Whisper Transcription
 
-A web-based audio recording application built with Rust, Leptos, Cloudflare Workers, Huggingface Candle, and WebAssembly that provides real-time audio recording and transcription using OpenAI's Whisper model locally in your browser.  This is primarily an example of how to use Leptos and Huggingface Candle to do on device machine learning in pure Rust.
+A web-based audio recording application built with Rust, Leptos, Cloudflare Workers, Huggingface Candle, and WebAssembly that provides real-time audio recording and transcription using OpenAI's Whisper model locally in your browser.  This is primarily an example of how to use Leptos and Huggingface Candle to do on device machine learning in pure Rust.  There is also a version that uses tokio if you want to try this without a Cloudflare account
 
 ## Features
 
@@ -14,7 +14,7 @@ A web-based audio recording application built with Rust, Leptos, Cloudflare Work
 ## Tech Stack
 
 - **Frontend**: Leptos (Rust framework for web apps)
-- **Backend**: Cloudflare Workers
+- **Backend**: Cloudflare Workers or Tokio
 - **Audio Processing**: Web Audio API, MediaRecorder API
 - **Transcription**: OpenAI Whisper model
 - **Styling**: CSS with mobile-first design
@@ -46,15 +46,42 @@ A web-based audio recording application built with Rust, Leptos, Cloudflare Work
    just check
    ```
 
-4. **Run app locally**:
-   ```bash
-   just dev
-   ```
+### Setup
+
+Before running the application, you need to download the Whisper model weights:
+
+```bash
+just r2 download-weights
+```
+
+If you plan to deploy to Cloudflare Workers, you'll also need to create an R2 bucket and upload the files.  It should be noted that to enable R2, I had to enter a credit card, but would only be charged for usage above the free tier:
+
+```bash
+# Create the R2 bucket
+just r2 create-bucket
+
+# Upload the model weights to R2
+just r2 upload
+```
+
+### Run locally
+
+**Without Cloudflare (does not require a Cloudflare Account)**:
+```bash
+just dev-nocloudflare
+```
+
+**With Cloudflare Workers**:
+```bash
+just dev
+```
 
 5. **Visit site**:
 ```
 open localhost:8786
 ```
+
+
 
 ### Cloudflare Workers Deployment
 
@@ -78,7 +105,7 @@ open localhost:8786
 4. **View Transcription**: The transcribed text will appear automatically
 5. **Playback**: Use the audio player to listen to your recording
 
-### Mobile Usage
+### Mobile Usage (Currently Broken)
 
 The application is optimized for mobile devices:
 - **Touch-friendly** buttons with proper sizing (44px minimum touch target)

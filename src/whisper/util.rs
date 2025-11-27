@@ -2,9 +2,9 @@ use super::model::ModelData;
 use leptos::prelude::*;
 use leptos::server_fn::codec::Cbor;
 
-#[cfg(feature = "ssr")]
+#[cfg(all(feature = "ssr", feature = "cloudflare"))]
 use send_wrapper::SendWrapper;
-#[cfg(feature = "ssr")]
+#[cfg(all(feature = "ssr", feature = "cloudflare"))]
 use worker::Bucket;
 
 pub const MODEL_KEY: &str = "whisper/whisper-tiny/model.safetensors";
@@ -12,7 +12,7 @@ pub const TOKENIZER_KEY: &str = "whisper/whisper-tiny/tokenizer.json";
 pub const MEL_KEY: &str = "whisper/mel_filters.safetensors";
 pub const CONFIG_KEY: &str = "whisper/whisper-tiny/config.json";
 
-#[cfg(feature = "ssr")]
+#[cfg(all(feature = "ssr", feature = "cloudflare"))]
 fn get_key_from_bucket(
     bucket: &SendWrapper<Bucket>,
     key: &str,
@@ -42,20 +42,52 @@ fn get_key_from_bucket(
 
 #[server(endpoint = "fetch_model_data", output = Cbor)]
 pub async fn fetch_model_data() -> Result<ModelData, ServerFnError> {
-    use axum::Extension;
-    use std::sync::Arc;
-    use worker::Env;
+    leptos::logging::log!("server side fetching model data");
+    #[cfg(not(feature = "ssr"))]
+    let (model_bytes, tokenizer_bytes, mel_filters_bytes, config_bytes) =
+        (vec![], vec![], vec![], vec![]);
 
-    let Extension::<Arc<Env>>(env) = leptos_axum::extract().await?;
-    let r2_bucket = env
-        .bucket("audio-recorder-bucket")
-        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    #[cfg(all(feature = "ssr", feature = "cloudflare", not(feature = "nocloudflare")))]
+    let (model_bytes, tokenizer_bytes, mel_filters_bytes, config_bytes) = {
+        use axum::Extension;
+        use std::sync::Arc;
+        use worker::Env;
 
-    let r2 = SendWrapper::new(r2_bucket);
-    let model_bytes = get_key_from_bucket(&r2, MODEL_KEY).await?;
-    let tokenizer_bytes = get_key_from_bucket(&r2, TOKENIZER_KEY).await?;
-    let mel_filters_bytes = get_key_from_bucket(&r2, MEL_KEY).await?;
-    let config_bytes = get_key_from_bucket(&r2, CONFIG_KEY).await?;
+        let Extension::<Arc<Env>>(env) = leptos_axum::extract().await?;
+        let r2_bucket = env
+            .bucket("audio-recorder-bucket")
+            .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+        let r2 = SendWrapper::new(r2_bucket);
+        let model_bytes = get_key_from_bucket(&r2, MODEL_KEY).await?;
+        let tokenizer_bytes = get_key_from_bucket(&r2, TOKENIZER_KEY).await?;
+        let mel_filters_bytes = get_key_from_bucket(&r2, MEL_KEY).await?;
+        let config_bytes = get_key_from_bucket(&r2, CONFIG_KEY).await?;
+        (
+            model_bytes,
+            tokenizer_bytes,
+            mel_filters_bytes,
+            config_bytes,
+        )
+    };
+    #[cfg(all(feature = "ssr", feature = "nocloudflare", not(feature = "cloudflare")))]
+    let (model_bytes, tokenizer_bytes, mel_filters_bytes, config_bytes) = {
+        use std::fs;
+
+        let model_bytes =
+            fs::read(&format!("assets/{MODEL_KEY}")).expect("cannot load model safetensor file");
+        let tokenizer_bytes =
+            fs::read(&format!("assets/{TOKENIZER_KEY}")).expect("cannot load tokenizer file");
+        let mel_filters_bytes = fs::read(&format!("assets/{MEL_KEY}"))
+            .expect("cannot load mel filters safetensor file");
+        let config_bytes = fs::read(&format!("assets/{CONFIG_KEY}")).expect("cannot load file");
+        (
+            model_bytes,
+            tokenizer_bytes,
+            mel_filters_bytes,
+            config_bytes,
+        )
+    };
 
     leptos::logging::log!(
         "Fetched model data. Weights: {} bytes, Tokenizer: {} bytes, Mel: {} bytes, Config: {} bytes",

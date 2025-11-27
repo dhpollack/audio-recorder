@@ -1,7 +1,5 @@
-#[cfg(feature = "ssr")]
+#[cfg(all(feature = "ssr", feature = "cloudflare"))]
 use worker::*;
-
-use crate::app::*;
 
 pub mod app;
 mod components;
@@ -15,13 +13,15 @@ pub fn register_server_functions() {
     register_explicit::<whisper::util::FetchModelData>();
 }
 
-#[cfg(feature = "ssr")]
+#[cfg(all(feature = "ssr", feature = "cloudflare"))]
 async fn router(env: Env) -> axum::Router {
     use std::sync::Arc;
 
     use axum::{Extension, Router};
     use leptos::prelude::*;
     use leptos_axum::{LeptosRoutes, generate_route_list};
+
+    use crate::app::{App, shell};
 
     let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;
@@ -38,7 +38,7 @@ async fn router(env: Env) -> axum::Router {
         .layer(Extension(Arc::new(env))) // <- Allow leptos server functions to access Worker stuff
 }
 
-#[cfg(feature = "ssr")]
+#[cfg(all(feature = "ssr", feature = "cloudflare"))]
 #[event(fetch)]
 async fn fetch(
     req: HttpRequest,
@@ -53,5 +53,6 @@ async fn fetch(
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {
+    use crate::app::App;
     leptos::mount::hydrate_body(App);
 }
