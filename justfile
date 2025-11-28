@@ -21,6 +21,10 @@ dev-nocloudflare:
 check features="ssr,cloudflare":
   cargo check --features {{ features }} --target wasm32-unknown-unknown
 
+# run wasm tests with firefox
+test-wasm:
+  wasm-pack test --headless --firefox
+
 _claude *args:
     claude {{ args }}
 

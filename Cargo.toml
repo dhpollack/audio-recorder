@@ -81,6 +81,9 @@ futures = "0.3.31"
 send_wrapper = "0.6.0"
 serde_cbor = "0.11.2"
 
+[dev-dependencies]
+wasm-bindgen-test = "0.3.39"
+
 [features]
 hydrate = ["leptos/hydrate"]
 ssr = ["dep:axum", "dep:leptos_axum", "leptos/ssr", "leptos_router/ssr"]

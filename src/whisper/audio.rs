@@ -2,22 +2,25 @@
 // https://github.com/ggerganov/whisper.cpp
 use super::model;
 
-pub trait Float: num_traits::Float + num_traits::FloatConst + num_traits::NumAssign {}
-
-impl Float for f32 {}
-impl Float for f64 {}
+// Constants
+const ZERO: f32 = 0.0;
+const HALF: f32 = 0.5;
+const ONE: f32 = 1.0;
+const FOUR: f32 = 4.0;
+const EIGHT: f32 = 8.0;
+const MIN_LOG_VALUE: f32 = 1e-10;
+const TWO_PI: f32 = std::f32::consts::PI * 2.0;
 
 // https://github.com/ggerganov/whisper.cpp/blob/4774d2feb01a772a15de81ffc34b34a1f294f020/whisper.cpp#L2357
-fn fft<T: Float>(inp: &[T]) -> Vec<T> {
+fn fft(inp: &[f32]) -> Vec<f32> {
     let n = inp.len();
-    let zero = T::zero();
     if n == 1 {
-        return vec![inp[0], zero];
+        return vec![inp[0], ZERO];
     }
     if n % 2 == 1 {
         return dft(inp);
     }
-    let mut out = vec![zero; n * 2];
+    let mut out = vec![ZERO; n * 2];
 
     let mut even = Vec::with_capacity(n / 2);
     let mut odd = Vec::with_capacity(n / 2);
@@ -33,11 +36,10 @@ fn fft<T: Float>(inp: &[T]) -> Vec<T> {
     let even_fft = fft(&even);
     let odd_fft = fft(&odd);
 
-    let two_pi = T::PI() + T::PI();
-    let n_t = T::from(n).unwrap();
+    let n_t = n as f32;
     for k in 0..n / 2 {
-        let k_t = T::from(k).unwrap();
-        let theta = two_pi * k_t / n_t;
+        let k_t = k as f32;
+        let theta = TWO_PI * k_t / n_t;
         let re = theta.cos();
         let im = -theta.sin();
 
@@ -54,57 +56,42 @@ fn fft<T: Float>(inp: &[T]) -> Vec<T> {
 }
 
 // https://github.com/ggerganov/whisper.cpp/blob/4774d2feb01a772a15de81ffc34b34a1f294f020/whisper.cpp#L2337
-fn dft<T: Float>(inp: &[T]) -> Vec<T> {
-    let zero = T::zero();
+fn dft(inp: &[f32]) -> Vec<f32> {
     let n = inp.len();
-    let two_pi = T::PI() + T::PI();
+    let n_t = n as f32;
 
-    let mut out = Vec::with_capacity(2 * n);
-    let n_t = T::from(n).unwrap();
-    for k in 0..n {
-        let k_t = T::from(k).unwrap();
-        let mut re = zero;
-        let mut im = zero;
-
-        for (j, &inp) in inp.iter().enumerate() {
-            let j_t = T::from(j).unwrap();
-            let angle = two_pi * k_t * j_t / n_t;
-            re += inp * angle.cos();
-            im -= inp * angle.sin();
-        }
-
-        out.push(re);
-        out.push(im);
-    }
-    out
+    (0..n)
+        .flat_map(|k| {
+            let k_t = k as f32;
+            let (re, im) =
+                inp.iter()
+                    .enumerate()
+                    .fold((ZERO, ZERO), |(re_acc, im_acc), (j, &val)| {
+                        let j_t = j as f32;
+                        let angle = TWO_PI * k_t * j_t / n_t;
+                        (re_acc + val * angle.cos(), im_acc - val * angle.sin())
+                    });
+            [re, im]
+        })
+        .collect()
 }
 
-#[allow(clippy::too_many_arguments)]
 // https://github.com/ggerganov/whisper.cpp/blob/4774d2feb01a772a15de81ffc34b34a1f294f020/whisper.cpp#L2414
-fn log_mel_spectrogram_w<T: Float>(
-    ith: usize,
-    hann: &[T],
-    samples: &[T],
-    filters: &[T],
+fn log_mel_spectrogram_w(
+    hann: &[f32],
+    samples: &[f32],
+    filters: &[f32],
     fft_size: usize,
     fft_step: usize,
-    speed_up: bool,
     n_len: usize,
     n_mel: usize,
-    n_threads: usize,
-) -> Vec<T> {
-    let n_fft = if speed_up {
-        1 + fft_size / 4
-    } else {
-        1 + fft_size / 2
-    };
+) -> Vec<f32> {
+    let n_fft = 1 + fft_size / 2;
 
-    let zero = T::zero();
-    let half = T::from(0.5).unwrap();
-    let mut fft_in = vec![zero; fft_size];
-    let mut mel = vec![zero; n_len * n_mel];
+    let mut fft_in = vec![ZERO; fft_size];
+    let mut mel = vec![ZERO; n_len * n_mel];
 
-    for i in (ith..n_len).step_by(n_threads) {
+    for i in 0..n_len {
         let offset = i * fft_step;
 
         // apply Hanning window
@@ -112,12 +99,12 @@ fn log_mel_spectrogram_w<T: Float>(
             fft_in[j] = if offset + j < samples.len() {
                 hann[j] * samples[offset + j]
             } else {
-                zero
+                ZERO
             }
         }
 
         // FFT -> mag^2
-        let mut fft_out: Vec<T> = fft(&fft_in);
+        let mut fft_out: Vec<f32> = fft(&fft_in);
 
         for j in 0..fft_size {
             fft_out[j] = fft_out[2 * j] * fft_out[2 * j] + fft_out[2 * j + 1] * fft_out[2 * j + 1];
@@ -127,42 +114,29 @@ fn log_mel_spectrogram_w<T: Float>(
             fft_out[j] += v;
         }
 
-        if speed_up {
-            // scale down in the frequency domain results in a speed up in the time domain
-            for j in 0..n_fft {
-                fft_out[j] = half * (fft_out[2 * j] + fft_out[2 * j + 1]);
-            }
-        }
-
         // mel spectrogram
         for j in 0..n_mel {
-            let mut sum = zero;
+            let mut sum = ZERO;
             for k in 0..n_fft {
                 sum += fft_out[k] * filters[j * n_fft + k];
             }
-            mel[j * n_len + i] = T::max(sum, T::from(1e-10).unwrap()).log10();
+            mel[j * n_len + i] = sum.max(MIN_LOG_VALUE).log10();
         }
     }
     mel
 }
 
-fn log_mel_spectrogram_<T: Float + std::fmt::Display>(
-    samples: &[T],
-    filters: &[T],
+fn log_mel_spectrogram_(
+    samples: &[f32],
+    filters: &[f32],
     fft_size: usize,
     fft_step: usize,
     n_mel: usize,
-    speed_up: bool,
-) -> Vec<T> {
-    let zero = T::zero();
-    let two_pi = T::PI() + T::PI();
-    let half = T::from(0.5).unwrap();
-    let one = T::from(1.0).unwrap();
-    let four = T::from(4.0).unwrap();
-    let fft_size_t = T::from(fft_size).unwrap();
+) -> Vec<f32> {
+    let fft_size_t = fft_size as f32;
 
-    let hann: Vec<T> = (0..fft_size)
-        .map(|i| half * (one - ((two_pi * T::from(i).unwrap()) / fft_size_t).cos()))
+    let hann: Vec<f32> = (0..fft_size)
+        .map(|i| HALF * (ONE - ((TWO_PI * i as f32) / fft_size_t).cos()))
         .collect();
     let n_len = samples.len() / fft_step;
 
@@ -177,39 +151,90 @@ fn log_mel_spectrogram_<T: Float + std::fmt::Display>(
     let samples = {
         let mut samples_padded = samples.to_vec();
         let to_add = n_len * fft_step - samples.len();
-        samples_padded.extend(std::iter::repeat_n(zero, to_add));
+        samples_padded.extend(std::iter::repeat_n(ZERO, to_add));
         samples_padded
     };
 
-    // Use a single thread for now.
-    let mut mel = log_mel_spectrogram_w(
-        0, &hann, &samples, filters, fft_size, fft_step, speed_up, n_len, n_mel, 1,
-    );
+    let mut mel = log_mel_spectrogram_w(&hann, &samples, filters, fft_size, fft_step, n_len, n_mel);
     let mmax = mel
         .iter()
         .max_by(|&u, &v| u.partial_cmp(v).unwrap_or(std::cmp::Ordering::Greater))
         .copied()
-        .unwrap_or(zero)
-        - T::from(8).unwrap();
+        .unwrap_or(ZERO)
+        - EIGHT;
     for m in mel.iter_mut() {
-        let v = T::max(*m, mmax);
-        *m = v / four + one
+        let v = (*m).max(mmax);
+        *m = v / FOUR + ONE
     }
     mel
 }
 
-pub fn pcm_to_mel<T: Float + std::fmt::Display>(
+pub fn pcm_to_mel(
     cfg: &model::m::Config,
-    samples: &[T],
-    filters: &[T],
-) -> anyhow::Result<Vec<T>> {
+    samples: &[f32],
+    filters: &[f32],
+) -> anyhow::Result<Vec<f32>> {
     let mel = log_mel_spectrogram_(
         samples,
         filters,
         model::m::N_FFT,
         model::m::HOP_LENGTH,
         cfg.num_mel_bins,
-        false,
     );
     Ok(mel)
+}
+
+// Tests taken from candle-transformers
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fft() {
+        let input: Vec<f32> = vec![0.0, 1.0, 0.0, 0.0];
+        let output = fft(&input);
+        assert_eq!(
+            output,
+            vec![1.0, 0.0, -4.371139e-8, -1.0, -1.0, 0.0, 4.371139e-8, 1.0]
+        );
+    }
+
+    #[test]
+    fn test_dft() {
+        let input: Vec<f32> = vec![0.0, 1.0, 0.0, 0.0];
+        let output = dft(&input);
+        assert_eq!(
+            output,
+            vec![
+                1.0,
+                0.0,
+                -4.371139e-8,
+                -1.0,
+                -1.0,
+                8.742278e-8,
+                1.1924881e-8,
+                1.0
+            ]
+        );
+    }
+
+    #[test]
+    fn test_log_mel_spectrogram() {
+        let samples: Vec<f32> = vec![0.0; 1000];
+        let filters = vec![0.0; 1000];
+        let output = log_mel_spectrogram_(&samples, &filters, 100, 10, 10);
+        assert_eq!(output.len(), 30_000);
+        let sum = output.iter().sum::<f32>().abs() - 0.0;
+        assert!((sum - 45000.0).abs() < 1e-5, "{sum:.8}");
+    }
+
+    #[test]
+    fn test_tiny_log_mel_spectrogram() {
+        let samples: Vec<f32> = vec![0.0; 100];
+        let filters = vec![0.0; 100];
+        let output = log_mel_spectrogram_(&samples, &filters, 20, 2, 2);
+        assert_eq!(output.len(), 6_000);
+        let sum = output.iter().sum::<f32>().abs() - 0.0;
+        assert!((sum - 9000.0).abs() < 1e-5, "{sum:.8}");
+    }
 }

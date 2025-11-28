@@ -10,42 +10,6 @@ use tokenizers::Tokenizer;
 pub const DTYPE: DType = DType::F32;
 pub const DEVICE: Device = Device::Cpu;
 
-pub enum Model {
-    Normal(m::model::Whisper),
-}
-
-// Maybe we should use some traits rather than doing the dispatch for all these.
-impl Model {
-    pub fn config(&self) -> &Config {
-        match self {
-            Self::Normal(m) => &m.config,
-        }
-    }
-
-    pub fn encoder_forward(&mut self, x: &Tensor, flush: bool) -> candle_core::Result<Tensor> {
-        match self {
-            Self::Normal(m) => m.encoder.forward(x, flush),
-        }
-    }
-
-    pub fn decoder_forward(
-        &mut self,
-        x: &Tensor,
-        xa: &Tensor,
-        flush: bool,
-    ) -> candle_core::Result<Tensor> {
-        match self {
-            Self::Normal(m) => m.decoder.forward(x, xa, flush),
-        }
-    }
-
-    pub fn decoder_final_linear(&self, x: &Tensor) -> candle_core::Result<Tensor> {
-        match self {
-            Self::Normal(m) => m.decoder.final_linear(x),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DecodingResult {
     pub tokens: Vec<u32>,
@@ -64,7 +28,7 @@ pub struct Segment {
 }
 
 pub struct Decoder {
-    model: Model,
+    model: m::model::Whisper,
     rng: rand::rngs::StdRng,
     task: Option<Task>,
     language: Option<String>,
@@ -84,7 +48,7 @@ pub struct Decoder {
 impl Decoder {
     #[allow(clippy::too_many_arguments)]
     fn new(
-        model: Model,
+        model: m::model::Whisper,
         tokenizer: Tokenizer,
         mel_filters: Vec<f32>,
         device: &Device,
@@ -93,9 +57,9 @@ impl Decoder {
         is_multilingual: bool,
         timestamps: bool,
     ) -> anyhow::Result<Self> {
-        let suppress_tokens: Vec<f32> = (0..model.config().vocab_size as u32)
+        let suppress_tokens: Vec<f32> = (0..model.config.vocab_size as u32)
             .map(|i| {
-                if model.config().suppress_tokens.contains(&i) {
+                if model.config.suppress_tokens.contains(&i) {
                     f32::NEG_INFINITY
                 } else {
                     0f32
@@ -151,9 +115,9 @@ impl Decoder {
             }
         };
 
-        let audio_features = model.encoder_forward(mel, true)?;
+        let audio_features = model.encoder.forward(mel, true)?;
         leptos::logging::log!("audio features: {:?}", audio_features.dims());
-        let sample_len = model.config().max_target_positions / 2;
+        let sample_len = model.config.max_target_positions / 2;
         let mut sum_logprob = 0f64;
         let mut no_speech_prob = f64::NAN;
         let mut tokens = vec![self.sot_token];
@@ -174,12 +138,12 @@ impl Decoder {
             // The model expects a batch dim but this inference loop does not handle
             // it so we add it at this point.
             let tokens_t = tokens_t.unsqueeze(0)?;
-            let ys = model.decoder_forward(&tokens_t, &audio_features, i == 0)?;
+            let ys = model.decoder.forward(&tokens_t, &audio_features, i == 0)?;
 
             // Extract the no speech probability on the first iteration by looking at the first
             // token logits and the probability for the according token.
             if i == 0 {
-                let logits = model.decoder_final_linear(&ys.i(..1)?)?.i(0)?.i(0)?;
+                let logits = model.decoder.final_linear(&ys.i(..1)?)?.i(0)?.i(0)?;
                 no_speech_prob = softmax(&logits, 0)?
                     .i(self.no_speech_token as usize)?
                     .to_scalar::<f32>()? as f64;
@@ -187,7 +151,8 @@ impl Decoder {
 
             let (_, seq_len, _) = ys.dims3()?;
             let logits = model
-                .decoder_final_linear(&ys.i((..1, seq_len - 1..))?)?
+                .decoder
+                .final_linear(&ys.i((..1, seq_len - 1..))?)?
                 .i(0)?
                 .i(0)?;
             // TODO: Besides suppress tokens, we should apply the heuristics from
@@ -216,7 +181,7 @@ impl Decoder {
             let prob = softmax(&logits, candle_core::D::Minus1)?
                 .i(next_token as usize)?
                 .to_scalar::<f32>()? as f64;
-            if next_token == self.eot_token || tokens.len() > model.config().max_target_positions {
+            if next_token == self.eot_token || tokens.len() > model.config.max_target_positions {
                 break;
             }
             sum_logprob += prob.ln();
@@ -297,7 +262,7 @@ impl Decoder {
         let config: Config = serde_json::from_slice(&md.config)?;
         let model = {
             let vb = VarBuilder::from_buffered_safetensors(md.weights, m::DTYPE, &device)?;
-            Model::Normal(m::model::Whisper::load(&vb, config)?)
+            m::model::Whisper::load(&vb, config)?
         };
         leptos::logging::log!("done loading model");
 
@@ -322,9 +287,9 @@ impl Decoder {
     pub fn convert_and_run(&mut self, pcm_data: Vec<f32>) -> anyhow::Result<Vec<Segment>> {
         let device = Device::Cpu;
         leptos::logging::log!("pcm data loaded {}", pcm_data.len());
-        let mel = super::audio::pcm_to_mel(self.model.config(), &pcm_data, &self.mel_filters)?;
+        let mel = super::audio::pcm_to_mel(&self.model.config, &pcm_data, &self.mel_filters)?;
         let mel_len = mel.len();
-        let n_mels = self.model.config().num_mel_bins;
+        let n_mels = self.model.config.num_mel_bins;
         let mel = Tensor::from_vec(mel, (1, n_mels, mel_len / n_mels), &device)?;
         leptos::logging::log!("loaded mel: {:?}", mel.dims());
         let segments = self.run(&mel)?;
@@ -333,14 +298,14 @@ impl Decoder {
 }
 
 /// Returns the token id for the selected language.
-pub fn detect_language(model: &mut Model, tokenizer: &Tokenizer, mel: &Tensor) -> Result<u32, E> {
+pub fn detect_language(
+    model: &mut m::model::Whisper,
+    tokenizer: &Tokenizer,
+    mel: &Tensor,
+) -> Result<u32, E> {
     leptos::logging::debug_log!("detecting language");
     let (_bsize, _, seq_len) = mel.dims3()?;
-    let mel = mel.narrow(
-        2,
-        0,
-        usize::min(seq_len, model.config().max_source_positions),
-    )?;
+    let mel = mel.narrow(2, 0, usize::min(seq_len, model.config.max_source_positions))?;
     let device = mel.device();
 
     let language_token_ids = LANGUAGES
@@ -350,11 +315,11 @@ pub fn detect_language(model: &mut Model, tokenizer: &Tokenizer, mel: &Tensor) -
         .collect::<Result<Vec<_>, E>>()?;
 
     let sot_token = token_id(tokenizer, m::SOT_TOKEN)?;
-    let audio_features = model.encoder_forward(&mel, true)?;
+    let audio_features = model.encoder.forward(&mel, true)?;
     let tokens = Tensor::new(&[[sot_token]], device)?;
     let language_token_ids = Tensor::new(language_token_ids.as_slice(), device)?;
-    let ys = model.decoder_forward(&tokens, &audio_features, true)?;
-    let logits = model.decoder_final_linear(&ys.i(..1)?)?.i(0)?.i(0)?;
+    let ys = model.decoder.forward(&tokens, &audio_features, true)?;
+    let logits = model.decoder.final_linear(&ys.i(..1)?)?.i(0)?.i(0)?;
     let logits = logits.index_select(&language_token_ids, 0)?;
     let probs = candle_nn::ops::softmax(&logits, D::Minus1)?;
     let probs = probs.to_vec1::<f32>()?;

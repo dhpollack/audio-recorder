@@ -311,20 +311,18 @@ pub fn MediaRecorderComponent() -> impl IntoView {
                 }}
             </button>
 
-            <Show when=move || true>
-                <div class="worker-result">
-                    <h3>"Worker Calculation (Average):"</h3>
-                    <Suspense fallback=move || view! { "Loading..." }>
-                        {move || {
-                            match average_sample.get() {
-                                Some(Ok(res)) => format!("{res}"),
-                                Some(Err(e)) => format!("{e}"),
-                                None => "not sure what this is".to_string(),
-                            }
-                        }}
-                    </Suspense>
-                </div>
-            </Show>
+            <div class="worker-result">
+                <h3>"Worker Calculation (Average):"</h3>
+                <Suspense fallback=move || view! { "Loading..." }>
+                    {move || {
+                        match average_sample.get() {
+                            Some(Ok(res)) => format!("{res}"),
+                            Some(Err(e)) => format!("{e}"),
+                            None => "not sure what this is".to_string(),
+                        }
+                    }}
+                </Suspense>
+            </div>
 
             <Show when=move || !last_audio_url.get().is_empty()>
                 <div class="audio-player">
