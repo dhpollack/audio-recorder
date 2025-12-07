@@ -38,6 +38,9 @@ A web-based audio recording application built with Rust, Leptos, Cloudflare Work
 
 2. **Install dependencies**:
    ```bash
+   # TLDR
+   just setup
+   # set by set way
    cargo install just cargo-leptos
    ```
 

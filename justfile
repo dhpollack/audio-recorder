@@ -1,6 +1,14 @@
 help:
   just -l -u --list-submodules
 
+# setup project
+setup:
+  rustup target add wasm32-unknown-unknown
+  cargo binstall cargo-leptos
+  cargo install wasm-bindgen-cli
+  cargo update
+  just r2 download-weights
+
 # build with leptos for cloudflare
 build-leptos:
   cargo leptos build --release
