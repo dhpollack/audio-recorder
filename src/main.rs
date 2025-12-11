@@ -16,9 +16,6 @@ async fn main() {
     use leptos::prelude::*;
     use leptos_axum::{LeptosRoutes, generate_route_list};
 
-    // Fix: configure any_spawner for server-side Leptos code
-    any_spawner::Executor::init_futures_executor().expect("Failed to init any_spawner executor");
-
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;

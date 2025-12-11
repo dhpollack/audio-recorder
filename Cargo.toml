@@ -19,9 +19,6 @@ tokio = { version = "1", features = [
   "rt-multi-thread",
   "macros",
 ], optional = true }
-tower-http = { version = "0.6", features = ["fs"], optional = true }
-tower = { version = "0.5", optional = true }
-any_spawner = { version = "0.3.0", optional = true }
 # cloudflare
 worker = { version = "0.7", features = ["http", "axum", "d1"], optional = true }
 # common
@@ -90,14 +87,11 @@ ssr = ["dep:axum", "dep:leptos_axum", "leptos/ssr", "leptos_router/ssr"]
 cloudflare = ["dep:worker", "leptos_axum/wasm"]
 nocloudflare = [
   "dep:tokio",
-  "dep:tower",
-  "dep:tower-http",
   "axum/macros",
   "axum/tokio",
   "axum/http2",
   "axum/default",
   "leptos_axum/default",
-  "dep:any_spawner",
 ]
 
 [package.metadata.leptos]

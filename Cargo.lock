@@ -132,7 +132,6 @@ dependencies = [
 name = "audio-recorder"
 version = "0.1.0"
 dependencies = [
- "any_spawner",
  "anyhow",
  "axum",
  "candle-core",
@@ -157,8 +156,6 @@ dependencies = [
  "serde_json",
  "tokenizers",
  "tokio",
- "tower",
- "tower-http",
  "tower-service",
  "wasm-bindgen",
  "wasm-bindgen-futures",
