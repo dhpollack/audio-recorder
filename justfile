@@ -1,11 +1,14 @@
+set unstable
+
+cargo_install := which("cargo-binstall") || "cargo install"
+
 help:
   just -l -u --list-submodules
 
 # setup project
 setup:
   rustup target add wasm32-unknown-unknown
-  cargo binstall cargo-leptos
-  cargo install wasm-bindgen-cli
+  {{ cargo_install }} cargo-leptos wasm-bindgen-cli
   cargo update
   just r2 download-weights
 
