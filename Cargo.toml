@@ -5,7 +5,7 @@ edition = "2024"
 authors = ["David Pollack <david@da3.net>"]
 
 [profile.release]
-opt-level = "z"   # optimize for size in release builds
+opt-level = "z"
 lto = true
 strip = true
 codegen-units = 1

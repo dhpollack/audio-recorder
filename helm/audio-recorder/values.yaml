@@ -18,8 +18,8 @@ service:
 gateway:
   httproute:
     create: false
-    hostname: audio-recorder.example.com
+    hostname: audio-recorder.cluster.lan
     parentRef:
-      name: external-http
-      namespace: gateway
+      name: traefik-gateway
+      namespace: traefik
       sectionName: ""
