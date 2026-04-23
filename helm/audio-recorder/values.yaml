@@ -1,0 +1,25 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/dpollack/audio-recorder
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+service:
+  port: 8080
+
+gateway:
+  httproute:
+    create: false
+    hostname: audio-recorder.example.com
+    parentRef:
+      name: external-http
+      namespace: gateway
+      sectionName: ""

@@ -1,0 +1,20 @@
+{{- if .Values.gateway.httproute.create }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "audio-recorder.fullname" . }}
+  labels: {{- include "audio-recorder.labels" . | nindent 4 }}
+spec:
+  hostnames:
+    - {{ .Values.gateway.httproute.hostname }}
+  parentRefs:
+    - name: {{ .Values.gateway.httproute.parentRef.name }}
+      namespace: {{ .Values.gateway.httproute.parentRef.namespace }}
+{{- if .Values.gateway.httproute.parentRef.sectionName }}
+      sectionName: {{ .Values.gateway.httproute.parentRef.sectionName }}
+{{- end }}
+  rules:
+    - backendRefs:
+        - name: {{ include "audio-recorder.fullname" . }}
+          port: {{ .Values.service.port }}
+{{- end }}

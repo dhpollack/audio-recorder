@@ -1,0 +1,23 @@
+name: release-please
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-please:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Please
+        id: release-please
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          token: ${{ secrets.GH_PAT_RELEASE_PLEASE }}
