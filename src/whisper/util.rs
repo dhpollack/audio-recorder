@@ -7,10 +7,10 @@ use send_wrapper::SendWrapper;
 #[cfg(all(feature = "ssr", feature = "cloudflare"))]
 use worker::Bucket;
 
-pub const MODEL_KEY: &str = "whisper/whisper-tiny/model.safetensors";
-pub const TOKENIZER_KEY: &str = "whisper/whisper-tiny/tokenizer.json";
-pub const MEL_KEY: &str = "whisper/mel_filters.safetensors";
-pub const CONFIG_KEY: &str = "whisper/whisper-tiny/config.json";
+pub const MODEL_KEY: &str = "models/whisper/whisper-tiny/model.safetensors";
+pub const TOKENIZER_KEY: &str = "models/whisper/whisper-tiny/tokenizer.json";
+pub const MEL_KEY: &str = "models/whisper/mel_filters.safetensors";
+pub const CONFIG_KEY: &str = "models/whisper/whisper-tiny/config.json";
 
 #[cfg(all(feature = "ssr", feature = "cloudflare"))]
 fn get_key_from_bucket(

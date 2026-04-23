@@ -1,0 +1,26 @@
+name: Helm Chart Publish
+
+on:
+  push:
+    branches: [main]
+    paths: ["helm/**"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: azure/setup-helm@v5
+        with:
+          version: latest
+
+      - name: Package chart
+        run: helm package helm/audio-recorder
+
+      - name: Login to GHCR
+        run: helm registry login ghcr.io --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push chart
+        run: helm push audio-recorder-*.tgz oci://ghcr.io/${{ github.repository_owner }}/helm-charts/audio-recorder

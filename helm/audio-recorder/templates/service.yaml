@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "audio-recorder.fullname" . }}
+  labels: {{- include "audio-recorder.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "audio-recorder.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

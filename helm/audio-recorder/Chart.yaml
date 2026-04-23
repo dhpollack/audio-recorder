@@ -1,0 +1,5 @@
+apiVersion: v2
+name: audio-recorder
+description: A Helm chart for a leptos on-device ml audio recorder
+type: application
+version: 0.0.1

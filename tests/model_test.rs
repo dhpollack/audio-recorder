@@ -19,7 +19,7 @@ fn model_assets_load_successfully() {
     }
 
     // Load model assets from the assets directory
-    let model_path = "assets/whisper/whisper-tiny";
+    let model_path = "assets/models/whisper/whisper-tiny";
 
     // Check if the model directory exists
     if !std::path::Path::new(model_path).exists() {

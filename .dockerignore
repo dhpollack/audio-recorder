@@ -1,0 +1,11 @@
+target
+node_modules
+.wrangler
+build
+
+# custom
+legacy/
+.env*
+screenshots/
+# tmp
+assets/models/moonshine
