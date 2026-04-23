@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/dhpollack/audio-recorder/compare/audio-recorder-v0.3.0...audio-recorder-v0.3.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* change some values to trigger rebuild ([#6](https://github.com/dhpollack/audio-recorder/issues/6)) ([5532171](https://github.com/dhpollack/audio-recorder/commit/5532171dc687d06a69c843e973c12bcdc8791976))
+
 ## [0.3.0](https://github.com/dhpollack/audio-recorder/compare/audio-recorder-v0.2.0...audio-recorder-v0.3.0) (2026-04-23)
 
 
