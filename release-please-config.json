@@ -4,7 +4,8 @@
       "release-type": "helm"
     },
     ".": {
-      "release-type": "rust"
+      "release-type": "rust",
+      "include-component-in-tag": false
     }
   }
 }
