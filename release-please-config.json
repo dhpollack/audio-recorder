@@ -4,9 +4,7 @@
       "release-type": "helm"
     },
     ".": {
-      "release-type": "simple",
-      "version-file": "Cargo.toml",
-      "extra-files": []
+      "release-type": "rust"
     }
   }
 }
