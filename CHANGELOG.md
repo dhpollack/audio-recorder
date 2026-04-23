@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/dhpollack/audio-recorder/compare/audio-recorder-v0.4.0...audio-recorder-v0.4.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* fix helm chart publish and add readme ([#9](https://github.com/dhpollack/audio-recorder/issues/9)) ([5e3ed27](https://github.com/dhpollack/audio-recorder/commit/5e3ed27f7c2606d06d63397bfbe4eb8618615a39))
+
 ## [0.4.0](https://github.com/dhpollack/audio-recorder/compare/audio-recorder-v0.3.1...audio-recorder-v0.4.0) (2026-04-23)
 
 
