@@ -6,4 +6,5 @@ build
 # custom
 legacy/
 .env*
+.local.justfile
 screenshots/

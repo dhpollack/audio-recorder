@@ -36,13 +36,9 @@ check features="ssr,cloudflare":
 test-wasm:
   wasm-pack test --headless --firefox
 
-_claude *args:
-    claude {{ args }}
-
-claude *args:
-    just -E .env-claude _claude {{ args }}
-
 build-push-local:
     docker buildx build --builder multiarch-builder --platform linux/arm64,linux/amd64 -t 192.168.8.1:5000/local/audio-recorder:dev . --output type=registry,registry.insecure=true
+
+import? '.local.justfile'
 
 mod r2 "assets"
