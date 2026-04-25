@@ -1,4 +1,4 @@
 {
-  ".": "0.6.0",
-  "helm/audio-recorder": "0.1.2"
+  ".": "0.6.1",
+  "helm/audio-recorder": "0.2.0"
 }

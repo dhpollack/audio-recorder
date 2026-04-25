@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1](https://github.com/dhpollack/audio-recorder/compare/audio-recorder-v0.6.0...audio-recorder-v0.6.1) (2026-04-25)
+
+
+### Bug Fixes
+
+* bump release-please action ([#15](https://github.com/dhpollack/audio-recorder/issues/15)) ([96a2302](https://github.com/dhpollack/audio-recorder/commit/96a230284045f73a3c98819880fc86dfec5ff7d9))
+* fix image build ([#14](https://github.com/dhpollack/audio-recorder/issues/14)) ([f4cb234](https://github.com/dhpollack/audio-recorder/commit/f4cb234bd2c652bd3e8a747802e3761903cb158c))
+* more fixes ([#16](https://github.com/dhpollack/audio-recorder/issues/16)) ([ce2349a](https://github.com/dhpollack/audio-recorder/commit/ce2349a11b963fd06b9a0c54fa1484962a20a833))
+
 ## [0.6.0](https://github.com/dhpollack/audio-recorder/compare/v0.5.0...v0.6.0) (2026-04-23)
 
 
