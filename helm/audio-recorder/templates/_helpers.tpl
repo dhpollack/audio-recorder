@@ -13,6 +13,6 @@
 {{- define "audio-recorder.labels" -}}
 app.kubernetes.io/name: {{ include "audio-recorder.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | default .Chart.Version | regexReplaceAll "[^a-zA-Z0-9._-]" "-" | quote }}
+app.kubernetes.io/version: {{ regexReplaceAll `[^a-zA-Z0-9._-]` (.Chart.AppVersion | default .Chart.Version) "-" | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}

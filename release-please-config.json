@@ -6,7 +6,8 @@
     },
     ".": {
       "release-type": "rust",
-      "component": "audio-recorder"
+      "component": "audio-recorder",
+      "exclude-paths": ["helm/audio-recorder"]
     }
   }
 }
