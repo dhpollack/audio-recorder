@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/dhpollack/audio-recorder/compare/helm-v0.2.1...helm-v0.2.2) (2026-04-27)
+
+
+### Bug Fixes
+
+* fix regex in helm template again ([#20](https://github.com/dhpollack/audio-recorder/issues/20)) ([c02a5d5](https://github.com/dhpollack/audio-recorder/commit/c02a5d58c4d0ddd4faf8ebce113af60ea1208252))
+
 ## [0.2.1](https://github.com/dhpollack/audio-recorder/compare/helm-v0.2.0...helm-v0.2.1) (2026-04-27)
 
 
