@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/dhpollack/audio-recorder/compare/helm-v0.2.0...helm-v0.2.1) (2026-04-27)
+
+
+### Bug Fixes
+
+* update change labels ([#18](https://github.com/dhpollack/audio-recorder/issues/18)) ([5591756](https://github.com/dhpollack/audio-recorder/commit/5591756c657fc8340c3076fc0f0491035637225d))
+
 ## [0.2.0](https://github.com/dhpollack/audio-recorder/compare/helm-v0.1.2...helm-v0.2.0) (2026-04-25)
 
 
